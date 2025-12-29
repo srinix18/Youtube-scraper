@@ -1,0 +1,22 @@
+# YouTube Data API
+google-api-python-client==2.111.0
+google-auth-oauthlib==1.2.0
+google-auth-httplib2==0.2.0
+
+# Transcript extraction
+youtube-transcript-api==0.6.2
+
+# Audio download and Whisper transcription
+yt-dlp==2023.12.30
+openai-whisper==20231117
+
+# Whisper dependencies
+torch>=2.0.0
+torchaudio>=2.0.0
+numpy>=1.24.0
+
+# Environment variables
+python-dotenv==1.0.0
+
+# Utilities
+tqdm==4.66.1

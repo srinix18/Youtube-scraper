@@ -1,0 +1,55 @@
+# Add .env file to gitignore
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# Output files
+output/
+data/
+*.jsonl
+
+# Audio files (from yt-dlp)
+*.mp3
+*.wav
+*.m4a
+*.webm
+
+# Whisper cache
+~/.cache/whisper/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
