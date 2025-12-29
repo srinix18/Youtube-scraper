@@ -246,9 +246,16 @@ def main():
         print("Please create a .env file with your API key")
         return
     
-    # Test with one channel first: hautemess tom
+    # All 8 channels for metadata and comments collection
     channel_ids = [
-        'UCyLqyEa45kWaSZlpvJvKhHA',  # hautemess tom (TEST)
+        'UCyLqyEa45kWaSZlpvJvKhHA',  # Hautemess Tom
+        'UCc95c_6uMb1VyFEJjgydHRA',  # Tashira Halyard (Politics & Fashion)
+        'UCD9VnTKTGliNFiPTBfQUBYw',  # Heylulaa (J Snyk - may not be correct)
+        # 'Livvmarkley',              # Not found - may need different search term
+        'UColKM5Unut13hF9_e41RGkw',  # alexonabudget (Alex Petrakieva)
+        'UCMjoPHi64Ofikn-udtEra4w',  # stylecrusader (STYLE CRUSADER)
+        'UCu0V4K1jf8cISkIzpi77p9Q',  # dermangelo (DermAngelo)
+        'UCquUgphHkwCF_d0qBLrfAdA',  # olenabeley (Olena Beley)
     ]
     
     if not channel_ids:
@@ -266,9 +273,9 @@ def main():
         api_key=api_key,
         output_dir=output_dir,
         years=years,
-        skip_transcripts=False,  # Set to True to skip transcript extraction
-        skip_comments=False,     # Set to True to skip comment scraping
-        skip_whisper=True        # Set to False to enable Whisper fallback (may hit rate limits)
+        skip_transcripts=True,       # Skip transcripts due to rate limit
+        skip_comments=False,         # Collect comments
+        skip_whisper=True
     )
     
     print("\n✓ Pipeline complete!")
