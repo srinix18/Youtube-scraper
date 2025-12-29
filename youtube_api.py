@@ -34,17 +34,15 @@ def get_uploads_playlist(youtube, channel_id: str) -> Optional[str]:
         response = request.execute()
         
         if not response.get('items'):
-            print(f"Channel {channel_id} not found")
+
             return None
             
         uploads_playlist_id = response['items'][0]['contentDetails']['relatedPlaylists']['uploads']
         return uploads_playlist_id
     
     except HttpError as e:
-        print(f"HTTP error fetching uploads playlist for {channel_id}: {e}")
         return None
     except Exception as e:
-        print(f"Error fetching uploads playlist for {channel_id}: {e}")
         return None
 
 
@@ -93,10 +91,8 @@ def get_recent_videos(youtube, playlist_id: str, years: int = 2) -> List[str]:
         return video_ids
     
     except HttpError as e:
-        print(f"HTTP error fetching videos from playlist {playlist_id}: {e}")
         return video_ids
     except Exception as e:
-        print(f"Error fetching videos from playlist {playlist_id}: {e}")
         return video_ids
 
 
@@ -119,7 +115,7 @@ def get_video_metadata(youtube, video_id: str) -> Optional[Dict]:
         response = request.execute()
         
         if not response.get('items'):
-            print(f"Video {video_id} not found")
+
             return None
         
         item = response['items'][0]
@@ -143,10 +139,8 @@ def get_video_metadata(youtube, video_id: str) -> Optional[Dict]:
         return metadata
     
     except HttpError as e:
-        print(f"HTTP error fetching metadata for {video_id}: {e}")
         return None
     except Exception as e:
-        print(f"Error fetching metadata for {video_id}: {e}")
         return None
 
 
@@ -192,13 +186,12 @@ def get_video_metadata_batch(youtube, video_ids: List[str]) -> List[Dict]:
                 metadata_list.append(metadata)
         
         except HttpError as e:
-            print(f"HTTP error fetching batch metadata: {e}")
             # Try individual requests for this batch
             for video_id in batch:
                 meta = get_video_metadata(youtube, video_id)
                 if meta:
                     metadata_list.append(meta)
         except Exception as e:
-            print(f"Error fetching batch metadata: {e}")
+            pass
     
     return metadata_list

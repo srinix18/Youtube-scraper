@@ -45,7 +45,6 @@ def get_whisper_model(model_name: str = "base"):
     """
     global _whisper_model
     if _whisper_model is None:
-        print(f"Loading Whisper model: {model_name}")
         device = "cuda" if torch.cuda.is_available() else "cpu"
         _whisper_model = whisper.load_model(model_name, device=device)
     return _whisper_model
@@ -90,24 +89,17 @@ def get_transcript(video_id: str) -> Optional[Dict]:
         }
     
     except TranscriptsDisabled:
-        print(f"Captions disabled for video {video_id}")
         return None
     except NoTranscriptFound:
-        print(f"No transcript found for video {video_id}")
         return None
     except VideoUnavailable:
-        print(f"Video {video_id} is unavailable")
         return None
     except TooManyRequests:
-        print(f"Rate limited on {video_id}, waiting 60s...")
         time.sleep(60)
         return None
     except Exception as e:
         if '429' in str(e) or 'Too Many Requests' in str(e):
-            print(f"Rate limited on {video_id}, waiting 60s...")
             time.sleep(60)
-        else:
-            print(f"Error fetching transcript for {video_id}: {e}")
         return None
 
 
@@ -148,7 +140,6 @@ def download_audio(video_id: str, output_dir: str) -> Optional[str]:
             return None
     
     except Exception as e:
-        print(f"Error downloading audio for {video_id}: {e}")
         return None
 
 
@@ -181,7 +172,7 @@ def whisper_transcribe(video_id: str, audio_path: Optional[str] = None,
         model = get_whisper_model(model_name)
         
         # Transcribe
-        print(f"Transcribing {video_id} with Whisper...")
+
         result = model.transcribe(audio_path, verbose=False)
         
         # Format segments
@@ -201,7 +192,6 @@ def whisper_transcribe(video_id: str, audio_path: Optional[str] = None,
         }
     
     except Exception as e:
-        print(f"Error transcribing {video_id} with Whisper: {e}")
         return None
     
     finally:
@@ -233,7 +223,7 @@ def get_transcript_with_fallback(video_id: str, force_whisper: bool = False) -> 
         transcript = get_transcript(video_id)
         if transcript:
             return transcript
-        print(f"Captions not available for {video_id}, falling back to Whisper")
+
     
     # Fallback to Whisper
     return whisper_transcribe(video_id)

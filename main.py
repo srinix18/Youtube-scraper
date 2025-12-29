@@ -117,7 +117,7 @@ def scrape_channel(
     print("Fetching uploads playlist...")
     uploads_playlist = get_uploads_playlist(youtube, channel_id)
     if not uploads_playlist:
-        print(f"Failed to get uploads playlist for channel {channel_id}")
+
         return
     
     # Get recent videos
@@ -126,7 +126,6 @@ def scrape_channel(
     print(f"Found {len(video_ids)} videos")
     
     if not video_ids:
-        print("No videos found")
         return
     
     # Load already processed videos for idempotency
@@ -227,13 +226,12 @@ def scrape_channels(
                 channel_id,
                 api_key,
                 output_dir,
-                years,,
-                skip_whisper
+                years,
                 skip_transcripts,
-                skip_comments
+                skip_comments,
+                skip_whisper
             )
         except Exception as e:
-            print(f"Error scraping channel {channel_id}: {e}")
             continue
 
 

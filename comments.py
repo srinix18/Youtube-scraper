@@ -52,20 +52,10 @@ def get_all_comments(youtube, video_id: str) -> List[Dict]:
     
     except HttpError as e:
         error_reason = e.error_details[0].get('reason', '') if e.error_details else ''
-        
-        # Handle disabled comments gracefully
-        if e.resp.status == 403 and error_reason == 'commentsDisabled':
-            print(f"Comments disabled for video {video_id}")
-            return []
-        elif e.resp.status == 404:
-            print(f"Video {video_id} not found or comments unavailable")
-            return []
-        else:
-            print(f"HTTP error fetching comments for {video_id}: {e}")
-            return []
+        # Silently handle all errors
+        return []
     
     except Exception as e:
-        print(f"Error fetching comments for {video_id}: {e}")
         return []
 
 
@@ -94,5 +84,4 @@ def get_comment_count(youtube, video_id: str) -> int:
         return int(response['items'][0].get('statistics', {}).get('commentCount', 0))
     
     except Exception as e:
-        print(f"Error getting comment count for {video_id}: {e}")
         return 0
