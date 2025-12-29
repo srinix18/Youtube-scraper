@@ -8,7 +8,6 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-import isodate
 
 
 def get_youtube_client(api_key: str):
