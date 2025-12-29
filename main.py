@@ -5,6 +5,7 @@ Coordinates video discovery, metadata extraction, transcript fetching, and comme
 
 import os
 import json
+import time
 from typing import List, Set
 from dotenv import load_dotenv
 from tqdm import tqdm
@@ -16,7 +17,7 @@ from youtube_api import (
     get_video_metadata_batch
 )
 from comments import get_all_comments
-from transcripts import get_transcript_with_fallback
+from transcripts import get_transcript_with_fallback, get_transcript
 
 
 # Load environment variables
@@ -91,7 +92,8 @@ def scrape_channel(
     output_dir: str = 'output',
     years: int = 2,
     skip_transcripts: bool = False,
-    skip_comments: bool = False
+    skip_comments: bool = False,
+    skip_whisper: bool = True
 ):
     """
     Scrape all videos from a YouTube channel from the last N years.
@@ -152,9 +154,18 @@ def scrape_channel(
         if videos_needing_transcripts:
             print(f"\nExtracting transcripts for {len(videos_needing_transcripts)} videos...")
             for video_id in tqdm(videos_needing_transcripts, desc="Transcripts"):
-                transcript = get_transcript_with_fallback(video_id)
+                transcript = get_transcript_with_fallback(video_id, force_whisper=False) if not skip_whisper else get_transcript(video_id)
                 if transcript:
                     append_jsonl(output_dir, 'transcripts.jsonl', transcript)
+                else:
+                    # Record failed attempt to avoid retrying
+                    append_jsonl(output_dir, 'transcripts.jsonl', {
+                        'video_id': video_id,
+                        'transcript_source': 'failed',
+                        'segments': []
+                    })
+                # Rate limiting: wait between requests to avoid 429 errors
+                time.sleep(1.5)
         else:
             print("\nAll transcripts already processed")
     
@@ -178,6 +189,8 @@ def scrape_channel(
                         'like_count': 0,
                         'published_at': None
                     })
+                # Rate limiting: wait between requests
+                time.sleep(0.5)
         else:
             print("\nAll comments already processed")
     
@@ -192,7 +205,8 @@ def scrape_channels(
     output_dir: str = 'output',
     years: int = 2,
     skip_transcripts: bool = False,
-    skip_comments: bool = False
+    skip_comments: bool = False,
+    skip_whisper: bool = True
 ):
     """
     Scrape multiple YouTube channels.
@@ -204,6 +218,7 @@ def scrape_channels(
         years: Number of years to look back
         skip_transcripts: If True, skip transcript extraction
         skip_comments: If True, skip comment extraction
+        skip_whisper: If True, skip Whisper fallback (only use YouTube captions)
     """
     for i, channel_id in enumerate(channel_ids, 1):
         print(f"\nProcessing channel {i}/{len(channel_ids)}")
@@ -212,7 +227,8 @@ def scrape_channels(
                 channel_id,
                 api_key,
                 output_dir,
-                years,
+                years,,
+                skip_whisper
                 skip_transcripts,
                 skip_comments
             )
@@ -232,10 +248,9 @@ def main():
         print("Please create a .env file with your API key")
         return
     
-    # Example channel IDs (replace with actual channel IDs)
+    # Test with one channel first: hautemess tom
     channel_ids = [
-        # Add your channel IDs here
-        # Example: 'UCuAXFkgsw1L7xaCfnd5JJOw'
+        'UCyLqyEa45kWaSZlpvJvKhHA',  # hautemess tom (TEST)
     ]
     
     if not channel_ids:
@@ -247,14 +262,15 @@ def main():
     output_dir = 'output'
     years = 2
     
-    # Run scraper
+    # Run scraper with rate limiting enabled
     scrape_channels(
         channel_ids=channel_ids,
         api_key=api_key,
         output_dir=output_dir,
         years=years,
         skip_transcripts=False,  # Set to True to skip transcript extraction
-        skip_comments=False      # Set to True to skip comment scraping
+        skip_comments=False,     # Set to True to skip comment scraping
+        skip_whisper=True        # Set to False to enable Whisper fallback (may hit rate limits)
     )
     
     print("\n✓ Pipeline complete!")

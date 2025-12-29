@@ -6,13 +6,24 @@ Falls back to Whisper transcription if captions are unavailable.
 
 import os
 import tempfile
+import time
 from typing import Dict, List, Optional
 from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api._errors import (
-    TranscriptsDisabled,
-    NoTranscriptFound,
-    VideoUnavailable
-)
+try:
+    from youtube_transcript_api._errors import (
+        TranscriptsDisabled,
+        NoTranscriptFound,
+        VideoUnavailable,
+        TooManyRequests
+    )
+except ImportError:
+    # TooManyRequests may not exist in older versions
+    from youtube_transcript_api._errors import (
+        TranscriptsDisabled,
+        NoTranscriptFound,
+        VideoUnavailable
+    )
+    TooManyRequests = Exception
 import yt_dlp
 import whisper
 import torch
@@ -87,8 +98,16 @@ def get_transcript(video_id: str) -> Optional[Dict]:
     except VideoUnavailable:
         print(f"Video {video_id} is unavailable")
         return None
+    except TooManyRequests:
+        print(f"Rate limited on {video_id}, waiting 60s...")
+        time.sleep(60)
+        return None
     except Exception as e:
-        print(f"Error fetching transcript for {video_id}: {e}")
+        if '429' in str(e) or 'Too Many Requests' in str(e):
+            print(f"Rate limited on {video_id}, waiting 60s...")
+            time.sleep(60)
+        else:
+            print(f"Error fetching transcript for {video_id}: {e}")
         return None
 
 

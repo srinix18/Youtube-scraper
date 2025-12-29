@@ -4,7 +4,7 @@ Handles channel data, video listing, and metadata extraction.
 """
 
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Optional
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
@@ -62,7 +62,7 @@ def get_recent_videos(youtube, playlist_id: str, years: int = 2) -> List[str]:
         List of video IDs
     """
     video_ids = []
-    cutoff_date = datetime.now() - timedelta(days=years * 365)
+    cutoff_date = datetime.now(timezone.utc) - timedelta(days=years * 365)
     next_page_token = None
     
     try:
