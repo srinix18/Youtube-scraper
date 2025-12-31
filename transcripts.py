@@ -9,21 +9,26 @@ import tempfile
 import time
 from typing import Dict, List, Optional
 from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api.proxies import GenericProxyConfig
 try:
     from youtube_transcript_api._errors import (
         TranscriptsDisabled,
         NoTranscriptFound,
         VideoUnavailable,
-        TooManyRequests
+        TooManyRequests,
+        RequestBlocked,
+        IpBlocked
     )
 except ImportError:
-    # TooManyRequests may not exist in older versions
+    # Some errors may not exist in older versions
     from youtube_transcript_api._errors import (
         TranscriptsDisabled,
         NoTranscriptFound,
         VideoUnavailable
     )
     TooManyRequests = Exception
+    RequestBlocked = Exception
+    IpBlocked = Exception
 import yt_dlp
 import whisper
 import torch
@@ -50,36 +55,34 @@ def get_whisper_model(model_name: str = "base"):
     return _whisper_model
 
 
-def get_transcript(video_id: str) -> Optional[Dict]:
+def get_transcript(video_id: str, proxy_config: Optional[GenericProxyConfig] = None) -> Optional[Dict]:
     """
     Attempt to fetch transcript using YouTube captions.
     
     Args:
         video_id: YouTube video ID
+        proxy_config: Optional proxy configuration to bypass IP blocks
         
     Returns:
         Dictionary with transcript data and source, or None if unavailable
     """
     try:
-        # Try to get transcript (prioritize English, but accept any language)
-        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+        # Create API client with optional proxy
+        if proxy_config:
+            api = YouTubeTranscriptApi(proxy_config=proxy_config)
+        else:
+            api = YouTubeTranscriptApi()
         
-        # Try to find English transcript first
-        try:
-            transcript = transcript_list.find_transcript(['en'])
-        except:
-            # Fall back to any available transcript
-            transcript = transcript_list.find_generated_transcript(['en'])
+        # Fetch transcript (tries English, falls back to auto-generated)
+        segments = api.fetch(video_id, languages=['en'])
         
-        segments = transcript.fetch()
-        
-        # Format segments
+        # Format segments - API v1.2+ returns objects with attributes
         formatted_segments = []
         for seg in segments:
             formatted_segments.append({
-                'start': seg['start'],
-                'duration': seg['duration'],
-                'text': seg['text']
+                'start': seg.start if hasattr(seg, 'start') else seg.get('start', 0),
+                'duration': seg.duration if hasattr(seg, 'duration') else seg.get('duration', 0),
+                'text': seg.text if hasattr(seg, 'text') else seg.get('text', '')
             })
         
         return {
@@ -88,17 +91,14 @@ def get_transcript(video_id: str) -> Optional[Dict]:
             'segments': formatted_segments
         }
     
-    except TranscriptsDisabled:
+    except (TranscriptsDisabled, NoTranscriptFound, VideoUnavailable):
         return None
-    except NoTranscriptFound:
-        return None
-    except VideoUnavailable:
-        return None
-    except TooManyRequests:
+    except (TooManyRequests, RequestBlocked, IpBlocked) as e:
+        # Rate limited or IP blocked - wait and return None
         time.sleep(60)
         return None
     except Exception as e:
-        if '429' in str(e) or 'Too Many Requests' in str(e):
+        if '429' in str(e) or 'Too Many Requests' in str(e) or 'blocked' in str(e).lower():
             time.sleep(60)
         return None
 
@@ -126,7 +126,8 @@ def download_audio(video_id: str, output_dir: str) -> Optional[str]:
         }],
         'outtmpl': os.path.join(output_dir, f"{video_id}.%(ext)s"),
         'quiet': True,
-        'no_warnings': True
+        'no_warnings': True,
+        'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
     }
     
     try:
@@ -207,20 +208,21 @@ def whisper_transcribe(video_id: str, audio_path: Optional[str] = None,
                 pass
 
 
-def get_transcript_with_fallback(video_id: str, force_whisper: bool = False) -> Optional[Dict]:
+def get_transcript_with_fallback(video_id: str, force_whisper: bool = False, proxy_config: Optional[GenericProxyConfig] = None) -> Optional[Dict]:
     """
     Get transcript with automatic fallback to Whisper if captions unavailable.
     
     Args:
         video_id: YouTube video ID
         force_whisper: If True, skip caption check and use Whisper directly
+        proxy_config: Optional proxy configuration to bypass IP blocks
         
     Returns:
         Dictionary with transcript data or None if all methods fail
     """
     # Try YouTube captions first
     if not force_whisper:
-        transcript = get_transcript(video_id)
+        transcript = get_transcript(video_id, proxy_config=proxy_config)
         if transcript:
             return transcript
 

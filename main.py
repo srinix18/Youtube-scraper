@@ -6,7 +6,7 @@ Coordinates video discovery, metadata extraction, transcript fetching, and comme
 import os
 import json
 import time
-from typing import List, Set
+from typing import List, Set, Optional
 from dotenv import load_dotenv
 from tqdm import tqdm
 
@@ -18,6 +18,7 @@ from youtube_api import (
 )
 from comments import get_all_comments
 from transcripts import get_transcript_with_fallback, get_transcript
+from youtube_transcript_api.proxies import GenericProxyConfig
 
 
 # Load environment variables
@@ -93,7 +94,8 @@ def scrape_channel(
     years: int = 2,
     skip_transcripts: bool = False,
     skip_comments: bool = False,
-    skip_whisper: bool = True
+    skip_whisper: bool = True,
+    proxy_config: Optional[GenericProxyConfig] = None
 ):
     """
     Scrape all videos from a YouTube channel from the last N years.
@@ -105,6 +107,8 @@ def scrape_channel(
         years: Number of years to look back
         skip_transcripts: If True, skip transcript extraction
         skip_comments: If True, skip comment extraction
+        skip_whisper: If True, skip Whisper fallback (use caption API only)
+        proxy_config: Optional proxy configuration for transcript API
     """
     print(f"\n{'='*60}")
     print(f"Scraping channel: {channel_id}")
@@ -153,7 +157,11 @@ def scrape_channel(
         if videos_needing_transcripts:
             print(f"\nExtracting transcripts for {len(videos_needing_transcripts)} videos...")
             for video_id in tqdm(videos_needing_transcripts, desc="Transcripts"):
-                transcript = get_transcript_with_fallback(video_id, force_whisper=False) if not skip_whisper else get_transcript(video_id)
+                if not skip_whisper:
+                    transcript = get_transcript_with_fallback(video_id, force_whisper=False, proxy_config=proxy_config)
+                else:
+                    transcript = get_transcript(video_id, proxy_config=proxy_config)
+                    
                 if transcript:
                     append_jsonl(output_dir, 'transcripts.jsonl', transcript)
                 else:
@@ -273,9 +281,9 @@ def main():
         api_key=api_key,
         output_dir=output_dir,
         years=years,
-        skip_transcripts=True,       # Skip transcripts due to rate limit
-        skip_comments=False,         # Collect comments
-        skip_whisper=True
+        skip_transcripts=False,      # Collect transcripts now
+        skip_comments=False,         # Continue collecting comments if needed
+        skip_whisper=False           # Enable Whisper fallback for local transcription
     )
     
     print("\n✓ Pipeline complete!")

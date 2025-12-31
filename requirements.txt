@@ -4,7 +4,7 @@ google-auth-oauthlib==1.2.0
 google-auth-httplib2==0.2.0
 
 # Transcript extraction
-youtube-transcript-api==0.6.2
+youtube-transcript-api>=1.2.0  # Proxy support added in v1.0+
 
 # Audio download and Whisper transcription
 yt-dlp==2023.12.30

@@ -11,6 +11,7 @@ Research-grade Python pipeline for scraping YouTube channels, extracting video m
   - Falls back to local Whisper transcription when captions are unavailable
   - Records transcript source for each video
 - **Comment Scraping**: Fetches all top-level comments with full pagination
+- **Proxy Support**: Bypass YouTube IP blocks using rotating residential proxies ([See PROXY_GUIDE.md](PROXY_GUIDE.md))
 - **Robust Error Handling**: Gracefully handles disabled comments, missing videos, and API failures
 - **Idempotent**: Safe to rerun without duplicating results
 
@@ -187,7 +188,7 @@ For Whisper transcripts, includes additional `language` field.
 
 - **`transcripts.py`**: Transcript extraction with Whisper fallback
 
-  - `get_transcript()`: Fetch captions via youtube-transcript-api
+  - `get_transcript()`: Fetch captions via youtube-transcript-api (with proxy support)
   - `whisper_transcribe()`: Local Whisper transcription
   - `get_transcript_with_fallback()`: Automatic fallback logic
 
@@ -246,6 +247,13 @@ _whisper_model = whisper.load_model("small")  # Use 'small' instead of 'base'
 
 - Install FFmpeg and ensure it's in your system PATH
 - Restart terminal after installation
+
+**Issue: 429 Too Many Requests / IP Blocked / 403 Forbidden**
+
+- YouTube is blocking your IP (common on cloud providers)
+- **Solution:** Use proxies to bypass blocks
+- **See:** [PROXY_GUIDE.md](PROXY_GUIDE.md) for complete instructions
+- **Quick fix:** Use rotating residential proxies (Webshare recommended)
 
 **Issue: Whisper transcription fails**
 
